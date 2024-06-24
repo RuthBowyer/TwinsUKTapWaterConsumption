@@ -13,15 +13,12 @@ This repository contains the analytical scripts to derive the results presented 
 - Darioush Yarand (2)
 - Claire J. Steves (2)
    
-1 Department of Geography, King’s College London, Bush House North East Wing, Aldwych, London, WC2B 4 BG, UK
+1. Department of Geography, King’s College London, Bush House North East Wing, Aldwych, London, WC2B 4 BG, UK
+2. Department of Twin Research and Genetic Epidemiology, King’s College London, London, SE1 7EH, UK
+3. The Alan Turing Institute, London, NW1 2BD, UK
+4. British Geological Survey, Maclean Building, Benson Lane, Crowmarsh Gifford, Oxfordshire, OX10 8BB, UK
 
-2 Department of Twin Research and Genetic Epidemiology, King’s College London, London, SE1 7EH, UK
-
-3 The Alan Turing Institute, London, NW1 2BD, UK
-
-4 British Geological Survey, Maclean Building, Benson Lane, Crowmarsh Gifford, Oxfordshire, OX10 8BB, UK
-
-* Corresponding author: Daniel Schillereff (daniel.schillereff [at] kcl.ac.uk) 
+* *Corresponding author: Daniel Schillereff (daniel.schillereff [at] kcl.ac.uk)*
 
 ## File description
 
