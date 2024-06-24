@@ -1,6 +1,6 @@
 # TwinsUK Tap Water Consumption
 
-This repository contains the analytical scripts to derive the results presented in the manuscript entitled: *Tap water consumption amongst adults in UK households is linked to perceptions of taste and health benefits*
+This repository contains the analytical scripts to derive the results presented in the manuscript entitled: *Tap water consumption amongst a cohort of UK twins is linked to perceptions of taste and health benefits*
 
 ## Authors and affiliations
 
