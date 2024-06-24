@@ -22,7 +22,7 @@ This repository contains the analytical scripts to derive the results presented 
 
 ## File description
 
-All files are available in `.rmd` and `.md` format.
+All files are available in `.md` format.
 
 This repository contains the following folder strcuture and files:
  - `Scripts/1.DerivingConsumptionRate` - Our derivation of water consumption in L/day
