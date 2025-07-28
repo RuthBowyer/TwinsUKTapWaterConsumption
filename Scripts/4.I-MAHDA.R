@@ -64,7 +64,9 @@ library(Metrics)
 
 # load the data
 #tut <- read_dta("TutorialData.dta")
-tut <-  df ## data as in 4.Heritability_Of_IngR.RMD
+#tut <-  df ## data as in 4.Heritability_Of_IngR.RMD
+tut <- read.csv(paste0(dd, "/water.consump.filter.2025.07.28.csv")) # File derived as output from script 1. This csv file has been filtered in Script 1.
+
 #  *****************************************************************************
 #  ***																			 
 #  ***		A Tutorial for Conducting  										 
