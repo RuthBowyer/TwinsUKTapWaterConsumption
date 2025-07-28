@@ -1,0 +1,358 @@
+---
+title: "**Water Questionnaire 3 - h2 of water consumption**"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+author: "Ruth CE Bowyer"
+output: 
+  github_document:
+    toc: true
+    toc_depth: 3
+---
+
+
+
+```{r setup, include=FALSE}
+rm(list=ls())
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message = F, warning =F}
+library(mets)
+library(dplyr)
+library(mets)
+library(ggplot2)
+library(viridis)
+library(readxl)
+```
+
+## **About**
+
+A script to estimate h2 via twin (ACE) models on deciles of water consumption
+
+## **Data**
+
+
+
+```{r include=FALSE}
+dd <- "~/Library/CloudStorage/OneDrive-King'sCollegeLondon/Working_projects/Tap.water/SharedDSRB/Data/I1194"
+
+dd2 <- "~/Library/CloudStorage/OneDrive-King'sCollegeLondon/General_scripts"
+
+dd3 <- "~/Library/CloudStorage/OneDrive-King'sCollegeLondon/Working_projects/Cope.Cleaning/Data/Cope1.Cleaned/COPE1UKLLCSUBMISSION.Forchecking"
+
+dd4 <- "~/Library/CloudStorage/OneDrive-King'sCollegeLondon/Working_projects/LEAP/Data/COVID/Cope_data"
+```
+
+
+
+```{r data}
+
+## Define the data directory -- actual directory omitted for security
+#dd <- ~/path/to/data
+
+
+TwinDetails <- read_excel(paste0(dd, "/TwinDetails.xlsx")) # Data on age, sex, ethnicity, zygosity 
+water <- read.csv(paste0(dd, "/water.consump.2024.05.07.csv")) # File derived as output from script 1.
+
+source(paste0(dd2,"/estimate.heritability.alessia.r")) ## Script to run h2 analysis via mets, thanks to Alessia Visconti, now wrapped as an R package: https://github.com/alesssia/timesaveR
+
+df <- merge(water, TwinDetails, by.x="study_no", by.y="ParticipantID", sort=F)
+
+### Data on employment from the TwinsUK Covid Personal Experience surveys
+cope1 <- read.csv(paste0(dd3,"/TWINSUK_COPE1_v0001_20211005.csv"))
+
+cope4 <- read.csv(paste0(dd4,"/TWINSUK_COPE4_v0001_20230201.csv"))
+
+```
+
+
+```{r}
+
+
+### Retirement status codes
+##TWINSUK_COPE1_v0001_20211005,E97,1,Employed
+##TWINSUK_COPE1_v0001_20211005,E97,2,Self-employed
+##TWINSUK_COPE1_v0001_20211005,E97,3,In unpaid/ voluntary work
+##TWINSUK_COPE1_v0001_20211005,E97,5,Unemployed
+##TWINSUK_COPE1_v0001_20211005,E97,4,"In education at school/college/university, or in an apprenticeship"
+##TWINSUK_COPE1_v0001_20211005,E97,6,Permanently sick or disabled
+##TWINSUK_COPE1_v0001_20211005,E97,7,Looking after home or family
+##TWINSUK_COPE1_v0001_20211005,E97,8,Retired
+##TWINSUK_COPE1_v0001_20211005,E97,9,Other
+##TWINSUK_COPE1_v0001_20211005,E97,999906,Question seen but not answered
+
+cope1_employment <- cope1[c("study_no", "E97")]
+
+## Add more from cope 4
+#1	Employed
+#2	Self-employed
+#3	In unpaid/ voluntary work
+#5	Unemployed
+#6	Permanently sick or disabled
+#7	Looking after home or family
+#8	In education at school/college/university, or in an apprenticeship
+#9	Retired
+#10	Other (Please specify)
+cope4_employment <- cope4[c("STUDY_ID", "Q_G_2")]
+names(cope4_employment)[1] <- "study_no"
+
+df <- left_join(df, cope1_employment, by="study_no")
+
+df <- left_join(df, cope4_employment, by="study_no")
+
+
+```
+
+```{r}
+
+df$Employ_bin1 <- ifelse(is.na(df$E97), NA,
+                           ifelse(df$E97==999906, NA,
+                       ifelse(df$E97==8|df$E97==6|df$E97==5|df$E97==7, "Retired.Sick.Unemployed.Home", "NotRetired")))
+
+
+df$Employ_bin2 <- ifelse(is.na(df$Q_G_2), NA,
+                           ifelse(df$Q_G_2==999906, NA,
+                                  ifelse(df$Q_G_2==9|df$Q_G_2==6|df$Q_G_2==7|df$Q_G_2==5, "Retired.Sick.Unemployed.Home", "NotRetired")))
+
+
+table(df$Employ_bin1, df$Employ_bin2, useNA = "ifany") ### Theres a bit of difference between the two, using the latest measure if two are available
+
+df$Employ_bin <- ifelse(is.na(df$Employ_bin2), df$Employ_bin1, df$Employ_bin2)
+table(df$Employ_bin, useNA="ifany")
+```
+
+```{r}
+
+pairwise.wilcox.test(df$total.consump.L, df$Employ_bin)
+```
+
+```{r}
+##Create age strata
+df$Agein2022 <- 2022- df$YearOfBirth
+
+
+df <- subset(df, Agein2022 > 18)
+age <- quantile(df$Agein2022, probs=c(1/3,2/3,1))
+
+df$Agein2022.gr <- ifelse(df$Agein2022>=71,"3.71+",
+                    ifelse(df$Agein2022>=60, "2.60-71",
+                           ifelse(df$Agein2022<60, "1.Under60",NA)))
+
+
+df$Agein2022.gr <- as.factor(df$Agein2022.gr)
+
+table(df$Agein2022.gr)
+
+```
+
+
+```{r}
+table(df$Agein2022.gr, df$Employ_bin)
+```
+
+
+
+```{r}
+
+dfg <- subset(df, !is.na(Employ_bin)) #Dropping NAs for fig
+ggplot(dfg, aes(Employ_bin, total.consump.L, group=Employ_bin, fill=Employ_bin)) + 
+  geom_boxplot() + theme_minimal() +
+  facet_wrap(.~Agein2022.gr) + 
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(), 
+        legend.position = "bottom") + 
+  scale_fill_brewer(palette="Set1", name = "Employment Status") + 
+  ylab("Daily tap water consumption (L)") + xlab("")
+
+```
+
+Check significance between the ages and strata
+
+```{r}
+
+i <- c("Retired.Sick.Unemployed.Home", "NotRetired")
+
+lapply(i, function(ii){
+  dfa <- subset(df, df$Employ_bin == ii)
+  pairwise.wilcox.test(dfa$total.consump.L, dfa$Agein2022.gr)
+  
+})
+
+```
+
+
+```{r message = F, warning =F}
+
+### create appropriate df for ACE model in mets
+table(duplicated(df$study_no))
+df <- subset(df, ACTUAL_ZYGOSITY!="UZ")
+dupes <- subset(df, duplicated(Family_No))
+df <- subset(df, Family_No %in% dupes$Family_No)
+
+table(df$ACTUAL_ZYGOSITY)
+```
+
+
+
+### **ACE models**
+
+```{r message = F, warning =F}
+
+### Defing total consumption as decile 
+  df$decvar <- as.numeric(ggplot2::cut_number(df$total.consump.L, n = 10))
+
+  form <- formula(paste0("decvar ~ 1"))
+  alltwins <- estimate.heritability(form, df, DZ="DZ", zyg="ACTUAL_ZYGOSITY", fid="Family_No")
+
+
+```
+
+
+
+```{r message = F, warning =F}
+alltwins$estimate.best
+```
+```{r message = F, warning =F}
+alltwins$aics
+```
+
+
+
+
+```{r message = F, warning =F}
+alltwins$models$ACE
+
+```
+
+
+```{r message = F, warning =F}
+alltwins$models$AE
+
+```
+
+
+### **ACE models stratified by retirement status**
+
+```{r}
+
+i <- c("Retired.Sick.Unemployed.Home", "NotRetired")
+
+strata <- lapply(i, function(ii){
+  dfa <- subset(df, df$Employ_bin == ii)
+  form <- formula(paste0("decvar ~ 1"))
+  alltwins <- estimate.heritability(form, dfa, DZ="DZ", zyg="ACTUAL_ZYGOSITY", fid="Family_No")})
+
+names(strata) <- i
+
+```
+
+#### **Retired.Sick.Unemployed.Home**
+
+```{r message = F, warning =F}
+strata$Retired.Sick.Unemployed.Home$estimate.best
+```
+```{r message = F, warning =F}
+strata$Retired.Sick.Unemployed.Home$aics
+```
+
+
+
+
+```{r message = F, warning =F}
+strata$Retired.Sick.Unemployed.Home$models$ACE
+
+```
+
+
+```{r message = F, warning =F}
+strata$Retired.Sick.Unemployed.Home$models$AE
+
+```
+
+
+
+#### **NotRetired**
+
+```{r message = F, warning =F}
+strata$NotRetired$estimate.best
+```
+```{r message = F, warning =F}
+strata$NotRetired$aics
+```
+
+
+
+
+```{r message = F, warning =F}
+strata$NotRetired$models$ACE
+
+```
+
+
+```{r message = F, warning =F}
+strata$NotRetired$models$AE
+
+```
+
+### **ACE models stratified by retirement status + age**
+
+
+```{r}
+
+i <- c("Retired.Sick.Unemployed.Home", "NotRetired")
+
+strata2 <- lapply(i, function(ii){
+  dfa <- subset(df, df$Employ_bin == ii)
+  form <- formula(paste0("decvar ~ Agein2022.gr"))
+  alltwins <- estimate.heritability(form, dfa, DZ="DZ", zyg="ACTUAL_ZYGOSITY", fid="Family_No")})
+
+names(strata2) <- i
+
+```
+
+#### **Retired.Sick.Unemployed.Home**
+
+```{r message = F, warning =F}
+strata2$Retired.Sick.Unemployed.Home$estimate.best
+```
+```{r message = F, warning =F}
+strata2$Retired.Sick.Unemployed.Home$aics
+```
+
+
+
+
+```{r message = F, warning =F}
+strata2$Retired.Sick.Unemployed.Home$models$ACE
+
+```
+
+
+```{r message = F, warning =F}
+strata2$Retired.Sick.Unemployed.Home$models$AE
+
+```
+
+
+
+#### **NotRetired**
+
+```{r message = F, warning =F}
+strata2$NotRetired$estimate.best
+```
+```{r message = F, warning =F}
+strata2$NotRetired$aics
+```
+
+
+
+
+```{r message = F, warning =F}
+strata2$NotRetired$models$ACE
+
+```
+
+
+```{r message = F, warning =F}
+strata2$NotRetired$models$AE
+
+```
