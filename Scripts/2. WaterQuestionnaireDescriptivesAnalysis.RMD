@@ -68,7 +68,7 @@ df.q <- as.data.frame(df.q)
 
 
 TDs <- read_excel(paste0(dd, "/TwinDetails.xlsx")) # Data on age, sex, ethnicity, zygosity 
-water.consump <- read.csv(paste0(dd, "/water.consump.2024.05.07.csv")) # File derived as output from script 1.
+water.consump <- read.csv(paste0(dd, "/water.consump.filter.2025.07.28.csv")) # File derived as output from script 1. This csv file has been filtered in Script 1. 
 
 ```
 
@@ -80,6 +80,9 @@ water.consump <- read.csv(paste0(dd, "/water.consump.2024.05.07.csv")) # File de
 ### **2a. Figure of amount consumed in general**
 
 ```{r warning = F}
+#Filter df.q to 3SDs
+df.q <- df.q %>%
+  filter(ParticipantID %in% water.consump$study_no)
 
 qs <- df.q[c("q2_a", "q2_b", "q2_d", "q2_e")]
 
@@ -128,6 +131,7 @@ p
 number.glasses <- subset(qs, q2_a == "7" & q2_b == "7")
 number.mugs <- subset(qs, q2_d == "3" | q2_d == "4" | q2_e == "3" | q2_e == "4")
 mugs.zero <- subset(qs, q2_d > "0" | q2_e > "0")
+glasses.mugs.zero <- subset(qs, q2_a == "0" & q2_b == "0" & q2_d == "0" & q2_e == "0")
 
 ```
 
@@ -201,32 +205,32 @@ p2
 ```{r}
 
 # Subset water.consump to remove drinking and cooking that are >3 sd from the mean
-remove.outliers.twocol <- function(df, col1, col2) {
-  # Calculate means and standard deviations
-  mean_col1 <- mean(df[, col1], na.rm = TRUE)
-  sd_col1 <- sd(df[, col1], na.rm = TRUE)
-  mean_col2 <- mean(df[, col2], na.rm = TRUE)
-  sd_col2 <- sd(df[, col2], na.rm = TRUE)
-  
-  # Define lower and upper bounds for both columns
-  lower_bound_col1 <- mean_col1 - 3 * sd_col1
-  upper_bound_col1 <- mean_col1 + 3 * sd_col1
-  lower_bound_col2 <- mean_col2 - 3 * sd_col2
-  upper_bound_col2 <- mean_col2 + 3 * sd_col2
-  
-  # Filter the dataframe (rows within both columns' bounds)
-  filtered_df <- df[
-    (df[, col1] >= lower_bound_col1 & df[, col1] <= upper_bound_col1) &
-    (df[, col2] >= lower_bound_col2 & df[, col2] <= upper_bound_col2),
-    ]
-  
-  # Return the filtered dataframe
-  return(filtered_df)
-}
+# remove.outliers.twocol <- function(df, col1, col2) {
+#   # Calculate means and standard deviations
+#   mean_col1 <- mean(df[, col1], na.rm = TRUE)
+#   sd_col1 <- sd(df[, col1], na.rm = TRUE)
+#   mean_col2 <- mean(df[, col2], na.rm = TRUE)
+#   sd_col2 <- sd(df[, col2], na.rm = TRUE)
+#   
+#   # Define lower and upper bounds for both columns
+#   lower_bound_col1 <- mean_col1 - 3 * sd_col1
+#   upper_bound_col1 <- mean_col1 + 3 * sd_col1
+#   lower_bound_col2 <- mean_col2 - 3 * sd_col2
+#   upper_bound_col2 <- mean_col2 + 3 * sd_col2
+#   
+#   # Filter the dataframe (rows within both columns' bounds)
+#   filtered_df <- df[
+#     (df[, col1] >= lower_bound_col1 & df[, col1] <= upper_bound_col1) &
+#     (df[, col2] >= lower_bound_col2 & df[, col2] <= upper_bound_col2),
+#     ]
+#   
+#   # Return the filtered dataframe
+#   return(filtered_df)
+# }
 
-water.consump.filtered.1 <- remove.outliers.twocol(water.consump, "total.drink.L", "total.cooking.L")
+#water.consump.filtered.1 <- remove.outliers.twocol(water.consump, "total.drink.L", "total.cooking.L")
 
-water.c.demo <- merge(water.consump.filtered.1, TDs, by.x=c("study_no"), by.y = "ParticipantID")
+water.c.demo <- merge(water.consump, TDs, by.x=c("study_no"), by.y = "ParticipantID")
 water.c.demo$age <- 2022 - water.c.demo$YearOfBirth
 
 water.c.demo$age.gr <- ifelse(water.c.demo$age>=45&water.c.demo$age<=65, "2. 45 - 65",
@@ -248,20 +252,6 @@ dpt <- water.c.demo %>%
 dpt2 <- as.data.frame(t(dpt))
 
 dpt2  
-
-#descriptive stats of daily water consumption for everyone who drinks more than 0 litres of water
-total.drink.L.over0 <- subset(water.c.demo, water.c.demo$total.drink.L > 0)
-dpt3 <- total.drink.L.over0 %>% 
-  summarise(n=length(age),
-            Water.Mean = mean(total.drink.L, na.rm = T),
-            Water.Median = median(total.drink.L, na.rm = T),
-            Water.SD = sd(total.drink.L, na.rm = T),
-            Water.Min = min(total.drink.L, na.rm = T),
-            Water.Max = max(total.drink.L, na.rm = T))
-
-dpt3
-
-
 
 
 #Hot drink consumption by sex and age
@@ -348,15 +338,6 @@ water.c.demo.noNA <- subset(water.c.demo, !is.na(Ethnic_Origin_Simple))
 ```
 
 ```{r}
-pp4 <- ggplot(water.c.demo.noNA, aes(Ethnic_Origin_Simple, total.drink.L, fill=Ethnic_Origin_Simple)) + geom_boxplot(outlier.shape = NA) + theme_bw() + scale_y_continuous(limits = c(0, 6.2)) + scale_x_discrete(labels = labels.ethnicity) + ylab("Daily water consumption from drinking (L)") + xlab("") + 
-  scale_fill_brewer(palette = "Dark2") +
-  annotate("text", x = 0.5, y = 6, label = c("B"), colour = "black", size = 8) +
-  theme(legend.position="none") +
-  theme(axis.text=element_text(size=14), axis.title=element_text(size=14)) 
-
-```
-
-```{r}
 total.drink.L.White <- subset(water.c.demo.noNA, Ethnic_Origin_Simple == "White")
 median(total.drink.L.White$total.drink.L)
 
@@ -368,9 +349,18 @@ pp4 <- ggplot(water.c.demo.noNA, aes(Ethnic_Origin_Simple, total.drink.L, fill=E
   scale_fill_brewer(palette = "Dark2") +
   annotate("text", x = 0.5, y = 6, label = c("B"), colour = "black", size = 8) +
   theme(legend.position="none") +
-  theme(axis.text=element_text(size=14), axis.title=element_text(size=14)) 
+  theme(axis.text=element_text(size=14), axis.title=element_text(size=14)) + geom_hline(yintercept = 2.7, linetype="dashed")  + geom_hline(yintercept = 3.7, linetype="dashed") +  
+  annotate("text", x = c(1.50, 2.4), y = c(0.75, 5.5), label = c("Recommended \n daily intake \n for women \n (2.7 L)", "Recommended \n daily intake \n for men  \n (3.7 L)")) +
+  annotate('curve',x = 1.34,y = 1.32, yend = 2.65, xend = 1.2, linewidth = 0.8, curvature = -0.4, arrow = arrow(length = unit(0.5, 'cm'))  ) +
+  annotate('curve', x = 2.45,y = 4.8, yend = 3.8, xend = 2.4, linewidth = 0.8, curvature = -0.4, arrow = arrow(length = unit(0.5, 'cm'))
+  )
+
 
 pp4
+
+
+Fig2 <- ggarrange(pp3, pp4, nrow = 1)
+
 ```
 
 ```{r}
@@ -422,7 +412,7 @@ labels.sex <- setNames(c("Female", "Male", "NA"), c("F", "M", NA))
 
 p6 <- ggplot(water.c.demo, aes(SEX, total.consump.L, fill = SEX)) + geom_violin() + theme_bw() + scale_y_continuous(limits = c(0, 6.2)) + scale_x_discrete(labels = labels.sex) + ylab("Total daily tap water consumption within the home (L)") + xlab("") + 
   scale_fill_brewer(palette = "Dark2") +
-  annotate("text", x = 0.5, y = 6, label = c("C"), colour = "black", size = 8) +
+  #annotate("text", x = 0.5, y = 6, label = c("C"), colour = "black", size = 8) +
   theme(legend.position="none") +
   theme(axis.text=element_text(size=14), axis.title=element_text(size=14)) +
   geom_segment(aes(x = 0.9, y = 2.4, xend = 1.1, yend = 2.4, linewidth = 1, colour = "#cc5500")) + geom_segment(aes(x = 1.9, y = 2.25, xend = 2.1, yend = 2.25, linewidth = 1, colour = "#006400")) + geom_hline(yintercept = 2.7, linetype="dashed")  + geom_hline(yintercept = 3.7, linetype="dashed") +  
@@ -501,30 +491,31 @@ pairwise.wilcox.test(water.c.demo$total.drink.L, water.c.demo$SEX)
 ### **2i. Do people who like the taste of their water drink more? (Question 8)**
 
 ```{r warning = F}
-#This creates a new master dataframe that is filtered by 3 sd drinking and cooking values
-df.q.filt <- merge(df.q, water.c.demo, by.x = "ParticipantID", by.y = "study_no")
-
-
-q7_8 <- as.data.frame(apply(df.q.filt[c("q7" , "q8")],2,function(x){
+q7_8 <- as.data.frame(apply(df.q[c("q7" , "q8")],2,function(x){
   x <- as.factor(x)
   levels(x) <- c("1. Strongly disagree", "2. Disgree", "3. Neither agree/disagree", "4. Agree", "5. Strongly Agree", NA)
   return(x)
 }))
 
-q5.filt <- df.q.filt[c("q5")]
+q5.filt <- df.q[c("q5")]
 
 water.c.demo <- cbind(water.c.demo, q7_8, q5.filt)
 
 
 #Do people who like their water drink more?
-p7 <- ggplot(subset(water.c.demo, !is.na(q8)), aes(q8, total.drink.L, fill=q8)) + geom_boxplot(outlier.shape = NA) + theme_bw() +     scale_y_continuous(limits = c(0, 6.4)) +
+Fig3A <- ggplot(subset(water.c.demo, !is.na(q8)), aes(q8, total.drink.L, fill=q8)) + geom_boxplot(outlier.shape = NA) + theme_bw() +     scale_y_continuous(limits = c(0, 8.5), breaks = c(0, 2, 4, 6), labels = c(0, 2, 4, 6)) +
   ylab("Daily drinking water consumption (L)") + xlab("") + scale_fill_brewer(palette = "Spectral", labels = c("Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly Agree", NA)) +  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
   theme(axis.title.y = element_text(margin = margin(r=15))) +
   theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) +
   theme(legend.title = element_blank(), legend.key.size = unit(1.5, "cm"), legend.text = element_text(size = 12)) +
-  annotate("text", x = 3, y = 6.2, label = c("I like the taste of the \n unfiltered tap water in my home"), size = 6) +   annotate("text", x = 0.75, y = 6.2, label = c("A"), colour = "black", size = 8)
+  #theme(plot.title=element_text(family='', face='bold', colour='green', size=26, margin=margin(t=40,b=-30)))
+  annotate("text", x = 3, y = 8.2, label = c("I like the taste of the \n unfiltered tap water in my home"), size = 6) +   annotate("text", x = 0.75, y = 8.4, label = c("A"), colour = "black", size = 8) 
 
-p7
+Fig3A
+
+m.q8 <- compare_means(total.drink.L ~ q8, data = water.c.demo, method = "wilcox.test")
+#Add significance stars
+Fig3A <- Fig3A + stat_pvalue_manual(m.q8, label = "p.signif", inherit.aes = FALSE, hide.ns = TRUE, y.position = 5.5, step.increase = 0.04, tip.length = 0.01)
 ```
 
 ```{r}
@@ -561,7 +552,7 @@ Water.SD.5 <- sd(strongly.like.water$total.drink.L, na.rm = T)
 
 
 #Are people who don't consume any drinks from their tap more averse to the taste of their water?
-qs.filt <- df.q.filt[c("q2_a", "q2_b", "q2_d", "q2_e")]
+qs.filt <- df.q[c("q2_a", "q2_b", "q2_d", "q2_e")]
 
 number.drinks <- cbind(water.c.demo, qs.filt)
 
@@ -594,15 +585,20 @@ s <- s1+s2+s3+s4+s5
 
 ```{r, warning = F}
 #Do people who consider tap water to be good for health drink more?
-p8 <- ggplot(subset(water.c.demo, !is.na(q7)), aes(q7, total.drink.L, fill=q7)) + geom_boxplot(outlier.shape = NA) + theme_bw() +     scale_y_continuous(limits = c(0, 6.4)) +
-  ylab("Daily drinking water consumption (L)") + xlab("") + scale_fill_brewer(palette = "Spectral", labels = c("Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly Agree", NA)) +  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
-  theme(axis.title.y = element_text(margin = margin(r=15))) +
+Fig3B <- ggplot(subset(water.c.demo, !is.na(q7)), aes(q7, total.drink.L, fill=q7)) + geom_boxplot(outlier.shape = NA) + theme_bw() +     scale_y_continuous(limits = c(0, 8.5), breaks = c(0, 2, 4, 6), labels = c(0, 2, 4, 6)) +
+  ylab("Daily water consumption (L)") + xlab("") + scale_fill_brewer(palette = "Spectral", labels = c("Strongly disagree", "Disagree", "Neither agree nor disagree", "Agree", "Strongly Agree", NA)) +  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
+  theme(axis.title.y = element_blank()) +
   theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) +
   theme(legend.title = element_blank(), legend.key.size = unit(1.5, "cm"), legend.text = element_text(size = 12)) +
-  annotate("text", x = 3, y = 6.2, label = c("Drinking tap water in the UK \n is good for my health"), size = 6) + 
-  annotate("text", x = 0.75, y = 6.2, label = c("B"), colour = "black", size = 8)
+  #theme(plot.title=element_text(family='', face='bold', colour='green', size=26, margin=margin(t=40,b=-30)))
+  annotate("text", x = 3, y = 8.2, label = c("Drinking tap water in the UK \n is good for my health"), size = 6) + 
+  annotate("text", x = 0.75, y = 8.4, label = c("B"), colour = "black", size = 8)
 
-p8
+m.q7 <- compare_means(total.drink.L ~ q7, data = water.c.demo, method = "wilcox.test")
+#Add significance stars
+Fig3B <- Fig3B + stat_pvalue_manual(m.q7, label = "p.signif", inherit.aes = FALSE, hide.ns = TRUE, y.position = 5.5, step.increase = 0.04, tip.length = 0.01)
+
+Fig3 <- ggarrange(Fig3A, Fig3B, nrow = 1, common.legend = TRUE, legend = "bottom")
 ```
 
 ```{r}
@@ -622,7 +618,7 @@ dunnTest(total.drink.L ~ q7,
 ### **2k. Unusual visual appearance**
 
 ```{r}
-q10 <- df.q.filt[c("q10")]
+q10 <- df.q[c("q10")]
 
 df.q10 <- as.data.frame(q10)
 
@@ -698,16 +694,15 @@ water.c.demo.q10s <- cbind(water.c.demo, q10s)
 water.c.demo.q10s <- as.data.frame(water.c.demo.q10s)
 
 #Question 10 - unusual appearance vs drinking 
-p11 <- ggplot(subset(water.c.demo.q10s, !is.na(q10)), aes(q10, total.drink.L, fill=q10)) + 
-  geom_boxplot(outlier.shape = NA) + theme_bw() + scale_y_continuous(limits = c(0, 6.2)) +
+Fig4A <- ggplot(subset(water.c.demo.q10s, !is.na(q10)), aes(q10, total.drink.L, fill=q10)) + 
+  geom_boxplot(outlier.shape = NA) + theme_bw() + scale_y_continuous(limits = c(0, 7.5)) +
   ylab("Daily drinking tap water consumption (L)") + xlab("") + scale_fill_brewer(palette = "Spectral", labels = c("Weekly", "Monthly", "A few times a year", "Once or twice a year", "Never / It always looks the same")) +  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
-  annotate("text", x = 0.75, y = 6, label = c("A"), colour = "black", size = 8) +
   theme(axis.title.y = element_text(margin = margin(r=15))) +
   theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) +
-  theme(legend.title = element_blank(), legend.key.size = unit(1.5, "cm"), legend.text = element_text(size = 12)) + 
-  annotate("text", x = 3, y = 6, label = c("How often is the tap water in my home \n unusual in appearance"), size = 6) 
+  theme(legend.title = element_blank(), legend.key.size = unit(1.5, "cm"), legend.text = element_text(size = 12)) + annotate("text", x = 3, y = 7.2, label = c("How often is the tap water in my home \n unusual in appearance"), size = 6) + 
+  annotate("text", x = 0.65, y = 7.4, label = c("A"), colour = "black", size = 8)
 
-p11
+Fig4A
 
 ```
 
@@ -729,15 +724,24 @@ dunnTest(total.drink.L ~ q10,
 ```{r}
 
 #Question 10 - unusual appearance vs total consumption (drinking + cooking)
-p12 <- ggplot(subset(water.c.demo.q10s, !is.na(q10)), aes(q10, total.consump.L, fill=q10)) + 
-  geom_boxplot(outlier.shape = NA) + theme_bw() + scale_y_continuous(limits = c(0, 6.2)) +
+Fig4B <- ggplot(subset(water.c.demo.q10s, !is.na(q10)), aes(q10, total.consump.L, fill=q10)) + 
+  geom_boxplot(outlier.shape = NA) + theme_bw() + scale_y_continuous(limits = c(0, 7.5)) +
   ylab("Daily total tap water consumption (L)") + xlab("") + scale_fill_brewer(palette = "Spectral", labels = c("Weekly", "Monthly", "A few times a year", "Once or twice a year", "Never / It always looks the same")) +  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
   theme(axis.title.y = element_text(margin = margin(r=15))) +
   theme(axis.text=element_text(size=12), axis.title=element_text(size=14)) +
   theme(legend.title = element_blank(), legend.key.size = unit(1.5, "cm"), legend.text = element_text(size = 12)) + 
-  annotate("text", x = 3, y = 6, label = c("How often is the tap water in my home \n unusual in appearance"), size = 6) 
+  annotate("text", x = 3, y = 7.2, label = c("How often is the tap water in my home \n unusual in appearance"), size = 6) + 
+  annotate("text", x = 0.65, y = 7.4, label = c("B"), colour = "black", size = 8)
 
-p12
+Fig4B
+
+m.q7 <- compare_means(total.drink.L ~ q7, data = water.c.demo, method = "wilcox.test")
+#Add significance stars
+Fig3B <- Fig3B + stat_pvalue_manual(m.q7, label = "p.signif", inherit.aes = FALSE, hide.ns = TRUE, y.position = 5.5, step.increase = 0.04, tip.length = 0.01)
+
+Fig4 <- ggarrange(Fig4A, Fig4B, nrow = 1, common.legend = TRUE, legend = "bottom")
+
+
 ```
 
 ```{r}
