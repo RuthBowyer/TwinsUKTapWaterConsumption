@@ -185,8 +185,7 @@ lapply(i, function(ii){
 ### create appropriate df for ACE model in mets
 table(duplicated(df$study_no))
 df <- subset(df, ACTUAL_ZYGOSITY!="UZ")
-dupes <- subset(df, duplicated(Family_No))
-df <- subset(df, Family_No %in% dupes$Family_No)
+
 
 table(df$ACTUAL_ZYGOSITY)
 ```
