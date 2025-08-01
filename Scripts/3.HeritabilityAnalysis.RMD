@@ -163,7 +163,7 @@ table(df$Agein2022.gr, df$Employ_bin)
 Save for running I-MAIHDA analysis 
 
 ```{r}
-write.csv(df, paste0(dd, "water.consump.filter.with.employ.tds.01.08.2025.csv"), row.names = F)
+write.csv(df, paste0(dd, "/water.consump.filter.with.employ.tds.01.08.2025.csv"), row.names = F)
 ```
 
 
