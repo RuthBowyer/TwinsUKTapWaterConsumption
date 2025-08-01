@@ -94,7 +94,7 @@ diff <- abs(twinwide$q71 - twinwide$q72)
 discordsq7 <- subset(twinwide, diff > 1)
 ```
 
-107 pairs discordant for Q7 (by 1 greater)
+101 pairs discordant for Q7 (by 1 greater)
 Twin2 have higher preference here (3,4or5)
 
 ```{r}
@@ -121,7 +121,7 @@ diff <- abs(twinwide$q81 - twinwide$q82)
 discordsq8 <- subset(twinwide, diff > 1)
 ```
 
-178 pairs discordant for Q8 (by 1 greater )
+162 pairs discordant for Q8 (by 1 greater )
 Twin2 have higher preference here (3,4or5)
 
 ```{r}
