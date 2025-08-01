@@ -193,7 +193,7 @@ study_no=df.q$ParticipantID
 total.L <- cbind(qs3, qs33, study_no)
 
 total.L.reorder <- total.L %>%
-  select(total.drink.L, total.cooking.L, everything())
+  dplyr::select(total.drink.L, total.cooking.L, everything())
 total.L.reorder <- data.frame(total.L.reorder)
 total.L.reorder$total.L <- total.L.reorder$total.drink.L + total.L.reorder$total.cooking.L
   
@@ -213,7 +213,7 @@ drinking.sd <- sd(total.L.filter$total.drink.L, na.rm = T)
 
 #Calculate percentage of respondents who drink less than 1 litre per day 
 sum(total.L.filter$total.drink.L < "1", na.rm=TRUE)
-316/2881*100
+316/2829*100
 
 
 #Calculate hot drinks
@@ -265,23 +265,6 @@ ggplot(total.cooking.L.df, aes(total.cooking.L)) + geom_histogram(fill="black", 
 
 
 ## **5. Total consumption, drinking + cooking**
-
-
-total.L <- cbind(total.drink.L, total.cooking.L)
-total.L <- rowSums(total.L[,c("total.drink.L", "total.cooking.L")])
-total.L.df <- data.frame(total.L)
-
-#Then use filtered values
-total.L.filt <- merge(qs3.filtered, qs33.filtered, by="row.names", sort=F)
-total.L.filt <- total.L.filt[c("Row.names", "total.drink.L", "total.cooking.L")]
-names(total.L.filt)[1] <- "study_no"
-total.L.filt.df <- total.L.filt
-
-#Calculate total consumption
-total.L.filt <- rowSums(total.L.filt[,c("total.drink.L", "total.cooking.L")])
-
-total.L.filter
-
 ```{r warning = F}
 total.consump.L <- total.L.filter$total.L 
 
