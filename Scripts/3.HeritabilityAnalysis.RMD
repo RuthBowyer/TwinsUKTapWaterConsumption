@@ -51,7 +51,7 @@ dd4 <- "~/Library/CloudStorage/OneDrive-King'sCollegeLondon/Working_projects/LEA
 
 
 TwinDetails <- read_excel(paste0(dd, "/TwinDetails.xlsx")) # Data on age, sex, ethnicity, zygosity 
-water <- read.csv(paste0(dd, "/water.consump.2024.05.07.csv")) # File derived as output from script 1.
+water.consump <- read.csv(paste0(dd, "/water.consump.filter.2025.07.28.csv")) # File derived as output from script 1. This csv file has been filtered in Script 1. 
 
 source(paste0(dd2,"/estimate.heritability.alessia.r")) ## Script to run h2 analysis via mets, thanks to Alessia Visconti, now wrapped as an R package: https://github.com/alesssia/timesaveR
 

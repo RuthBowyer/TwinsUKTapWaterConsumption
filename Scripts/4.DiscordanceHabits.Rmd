@@ -55,7 +55,7 @@ df.q <- as.data.frame(df.q)
 
 
 TDs <- read_excel(paste0(dd, "/TwinDetails.xlsx"))
-water.consump<- read.csv(paste0(dd, "/water.consump.2024.05.07.csv"))
+water.consump <- read.csv(paste0(dd, "/water.consump.filter.2025.07.28.csv")) # File derived as output from script 1. This csv file has been filtered in Script 1. 
 
 ```
 
