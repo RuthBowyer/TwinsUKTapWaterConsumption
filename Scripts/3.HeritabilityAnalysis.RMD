@@ -64,6 +64,8 @@ cope4 <- read.csv(paste0(dd4,"/TWINSUK_COPE4_v0001_20230201.csv"))
 
 ```
 
+
+
 ### Check how many complete twin pairs we have
 
 ```{r}
@@ -126,6 +128,7 @@ table(df$Employ_bin1, df$Employ_bin2, useNA = "ifany") ### Theres a bit of diffe
 
 df$Employ_bin <- ifelse(is.na(df$Employ_bin2), df$Employ_bin1, df$Employ_bin2)
 table(df$Employ_bin, useNA="ifany")
+
 ```
 
 ```{r}
@@ -155,6 +158,12 @@ table(df$Agein2022.gr)
 
 ```{r}
 table(df$Agein2022.gr, df$Employ_bin)
+```
+
+Save for running I-MAIHDA analysis 
+
+```{r}
+write.csv(df, paste0(dd, "water.consump.filter.with.employ.tds.01.08.2025.csv"), row.names = F)
 ```
 
 
