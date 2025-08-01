@@ -51,7 +51,7 @@ dd4 <- "~/Library/CloudStorage/OneDrive-King'sCollegeLondon/Working_projects/LEA
 
 
 TwinDetails <- read_excel(paste0(dd, "/TwinDetails.xlsx")) # Data on age, sex, ethnicity, zygosity 
-water.consump <- read.csv(paste0(dd, "/water.consump.filter.2025.07.28.csv")) # File derived as output from script 1. This csv file has been filtered in Script 1. 
+water <- read.csv(paste0(dd, "/water.consump.filter.2025.07.28.csv")) # File derived as output from script 1. This csv file has been filtered in Script 1. 
 
 source(paste0(dd2,"/estimate.heritability.alessia.r")) ## Script to run h2 analysis via mets, thanks to Alessia Visconti, now wrapped as an R package: https://github.com/alesssia/timesaveR
 
@@ -61,6 +61,14 @@ df <- merge(water, TwinDetails, by.x="study_no", by.y="ParticipantID", sort=F)
 cope1 <- read.csv(paste0(dd3,"/TWINSUK_COPE1_v0001_20211005.csv"))
 
 cope4 <- read.csv(paste0(dd4,"/TWINSUK_COPE4_v0001_20230201.csv"))
+
+```
+
+### Check how many complete twin pairs we have
+
+```{r}
+
+table(duplicated(df$Family_No), df$ACTUAL_ZYGOSITY)
 
 ```
 
@@ -165,6 +173,13 @@ ggplot(dfg, aes(Employ_bin, total.consump.L, group=Employ_bin, fill=Employ_bin))
 
 ```
 
+Number of twin pairs with employment data
+
+```{r}
+table(duplicated(dfg$Family_No), dfg$ACTUAL_ZYGOSITY)
+```
+
+
 Check significance between the ages and strata
 
 ```{r}
@@ -185,10 +200,9 @@ lapply(i, function(ii){
 ### create appropriate df for ACE model in mets
 table(duplicated(df$study_no))
 df <- subset(df, ACTUAL_ZYGOSITY!="UZ")
-dupes <- subset(df, duplicated(Family_No))
-df <- subset(df, Family_No %in% dupes$Family_No)
 
 table(df$ACTUAL_ZYGOSITY)
+
 ```
 
 
@@ -270,7 +284,7 @@ strata$Retired.Sick.Unemployed.Home$models$AE
 
 
 
-#### **NotRetired**
+#### **Employed**
 
 ```{r message = F, warning =F}
 strata$NotRetired$estimate.best
@@ -334,7 +348,7 @@ strata2$Retired.Sick.Unemployed.Home$models$AE
 
 
 
-#### **NotRetired**
+#### **Employed**
 
 ```{r message = F, warning =F}
 strata2$NotRetired$estimate.best
