@@ -37,7 +37,7 @@ library(halfmoon)
 
 ```{r include=FALSE}
 dd <- "~/Library/CloudStorage/OneDrive-King'sCollegeLondon/Working_projects/Tap.water/SharedDSRB/Data/I1194"
-
+dd <- "C:/Users/User/OneDrive - King's College London/SharedDSRB/Data/I1194"
 ```
 
 ```{r proj defined functions}
@@ -84,7 +84,7 @@ df.q <- as.data.frame(df.q)
 ## **2. Estimate water consumed daily through drinking**
 
 
-```{r}
+```{r Calculate water consumption from drinking, warning =F}
 
 qs <- df.q[c("q2_a", "q2_b", "q2_d", "q2_e")]
 
@@ -110,61 +110,6 @@ total.drink.ml <- rowSums(qs3[c("s.glass.ml", "l.glass.ml", "s.mug.ml", "l.mug.m
 total.drink.L <- total.drink.ml/1000
 
 qs3$total.drink.L <- total.drink.L
-
-#remove ± 3 SD from the mean
-remove_outliers <- function(df, col_name) {
-  # Calculate mean and standard deviation
-  mean_val <- mean(df[, col_name], na.rm = TRUE)
-  sd_val <- sd(df[, col_name], na.rm = TRUE)
-  
-  # Define lower and upper bounds (3 standard deviations away from mean)
-  lower_bound <- mean_val - 3 * sd_val
-  upper_bound <- mean_val + 3 * sd_val
-  
-  # Filter the dataframe to keep values within bounds
-  filtered_df <- df[df[, col_name] >= lower_bound & df[, col_name] <= upper_bound, ]
-  
-  # Return the filtered dataframe
-  return(filtered_df)
-}
-
-qs3.filtered <- remove_outliers(qs3, "total.drink.L")
-
-quantile(qs3.filtered$total.drink.L, probs = c(.90))
-drinking.median <- median(qs3.filtered$total.drink.L, na.rm = T)
-drinking.mean <- mean(qs3.filtered$total.drink.L, na.rm = T)
-drinking.sd <- sd(qs3.filtered$total.drink.L, na.rm = T)
-
-#Calculate percentage of respondents who drink less than 1 litre per day 
-sum(qs3.filtered$total.drink.L < "1", na.rm=TRUE)
-329/2881*100
-
-
-#Calculate hot drinks
-total.hot.drink.ml <- rowSums(qs3[c("s.mug.ml", "l.mug.ml")], na.rm=T)
-total.hot.drink.L <- total.hot.drink.ml/1000
-
-total.hot.drink.ml.filt <- rowSums(qs3.filtered[c("s.mug.ml", "l.mug.ml")], na.rm=T)
-total.hot.drink.L.filt <- total.hot.drink.ml.filt/1000
-
-hot.drink.median <- median(total.hot.drink.L.filt, na.rm = T)
-hot.drink.mean <- mean(total.hot.drink.L.filt, na.rm = T)
-hot.drink.sd <- sd(total.hot.drink.L.filt, na.rm = T)
-quantile(total.hot.drink.L.filt, probs = c(.90))
-
-hot.drink.mean / drinking.mean * 100
-
-#Calculate cold drinks
-total.cold.drink.ml <- rowSums(qs3.filtered[c("s.glass.ml", "l.glass.ml")], na.rm=T)
-total.cold.drink.L <- total.cold.drink.ml/1000
-
-cold.drink.median <- median(total.cold.drink.L, na.rm = T)
-cold.drink.mean <- mean(total.cold.drink.L, na.rm = T)
-cold.drink.sd <- sd(total.cold.drink.L, na.rm = T)
-quantile(total.cold.drink.L, probs = c(.90))
-
-cold.drink.mean / drinking.mean * 100
-
 
 ```
 
@@ -194,37 +139,122 @@ qs33$q4.perc[qs33$q4 == 4] <- 0.75
 qs33$q4.perc[qs33$q4 == 5] <- 1
 
 
-qs33$s.saucepan.ml <- qs33$q3_a*1000 #Our water q states "0.5 - 1.5 L" 
-qs33$l.saucepan.ml <- qs33$q3_b*2000 ##Our water q states "2L +" 
+qs33$s.cooking.ml <- qs33$q3_a*1000 #Our water q states "0.5 - 1.5 L" 
+qs33$l.cooking.ml <- qs33$q3_b*2000 ##Our water q states "2L +" 
 
 #Then need to account for how much water was absorbed. Pasta = 1.25x weight of dry food; rice = 1x. 
 
-total.saucepan.ml <- rowSums(qs33[c("s.saucepan.ml", "l.saucepan.ml")], na.rm=T)
+total.cooking.ml <- rowSums(qs33[c("s.cooking.ml", "l.cooking.ml")], na.rm=T)
 
 #MULTIPLE HERE BY 0.1 to account for portion size 
-qs33$total.saucepan.ml <- total.saucepan.ml * 0.1
+qs33$total.cooking.ml <- total.cooking.ml * 0.1
 
-qs33$total.saucepan.ml.individual <- qs33$total.saucepan.ml * qs33$q4.perc
+qs33$total.cooking.ml.individual <- qs33$total.cooking.ml * qs33$q4.perc
 
-total.saucepan.L <- qs33$total.saucepan.ml.individual/1000
+total.cooking.L <- qs33$total.cooking.ml.individual/1000
 
-qs33$total.saucepan.L <- total.saucepan.L
+qs33$total.cooking.L <- total.cooking.L
 
-qs33.filtered <- remove_outliers(qs33, "total.saucepan.L")
+```
 
-total.saucepan.L.filt <- qs33.filtered$total.saucepan.L
+## **4. Filter drinking + cooking data**
+```{r Filter function}
+# Subset to remove drinking and cooking that are >3 sd from the mean
+remove.outliers.twocol <- function(df, col1, col2) {
+  # Calculate means and standard deviations
+  mean_col1 <- mean(df[, col1], na.rm = TRUE)
+  sd_col1 <- sd(df[, col1], na.rm = TRUE)
+  mean_col2 <- mean(df[, col2], na.rm = TRUE)
+  sd_col2 <- sd(df[, col2], na.rm = TRUE)
+  
+  # Define lower and upper bounds for both columns
+  lower_bound_col1 <- mean_col1 - 3 * sd_col1
+  upper_bound_col1 <- mean_col1 + 3 * sd_col1
+  lower_bound_col2 <- mean_col2 - 3 * sd_col2
+  upper_bound_col2 <- mean_col2 + 3 * sd_col2
+  
+  # Filter the dataframe (rows within both columns' bounds)
+  filtered_df <- df[
+    (df[, col1] >= lower_bound_col1 & df[, col1] <= upper_bound_col1) &
+    (df[, col2] >= lower_bound_col2 & df[, col2] <= upper_bound_col2),
+    ]
+  
+  # Return the filtered dataframe
+  return(filtered_df)
+}
 
-cooking.median <- median(total.saucepan.L.filt, na.rm = T)
-cooking.mean <- mean(total.saucepan.L.filt, na.rm = T)
-cooking.sd <- sd(total.saucepan.L.filt, na.rm = T)
-cooking.min <- min(total.saucepan.L.filt, na.rm = T)
-cooking.max <- max(total.saucepan.L.filt, na.rm = T)
-quantile(total.saucepan.L.filt, probs = c(.90), na.rm = T)
 
-total.saucepan.L.df <- data.frame(total.saucepan.L=total.saucepan.L.filt)
+
+```
+
+```{r}
+study_no=df.q$ParticipantID
+
+total.L <- cbind(qs3, qs33, study_no)
+
+total.L.reorder <- total.L %>%
+  select(total.drink.L, total.cooking.L, everything())
+total.L.reorder <- data.frame(total.L.reorder)
+total.L.reorder$total.L <- total.L.reorder$total.drink.L + total.L.reorder$total.cooking.L
+  
+total.L.filter <- remove.outliers.twocol(total.L.reorder, "total.drink.L", "total.cooking.L")
+
+```
+
+
+
+```{r Filter drinking to 3 SDs}
+total.drink.L <- total.L.filter$total.drink.L
+
+quantile(total.L.filter$total.drink.L, probs = c(.90), na.rm = T)
+drinking.median <- median(total.L.filter$total.drink.L, na.rm = T)
+drinking.mean <- mean(total.L.filter$total.drink.L, na.rm = T)
+drinking.sd <- sd(total.L.filter$total.drink.L, na.rm = T)
+
+#Calculate percentage of respondents who drink less than 1 litre per day 
+sum(total.L.filter$total.drink.L < "1", na.rm=TRUE)
+316/2881*100
+
+
+#Calculate hot drinks
+total.hot.drink.ml <- rowSums(total.L.filter[c("s.mug.ml", "l.mug.ml")], na.rm=T)
+total.hot.drink.L <- total.hot.drink.ml/1000
+
+hot.drink.median <- median(total.hot.drink.L, na.rm = T)
+hot.drink.mean <- mean(total.hot.drink.L, na.rm = T)
+hot.drink.sd <- sd(total.hot.drink.L, na.rm = T)
+quantile(total.hot.drink.L, probs = c(.90))
+
+hot.drink.mean / drinking.mean * 100
+
+#Calculate cold drinks
+total.cold.drink.ml <- rowSums(total.L.filter[c("s.glass.ml", "l.glass.ml")], na.rm=T)
+total.cold.drink.L <- total.cold.drink.ml/1000
+
+cold.drink.median <- median(total.cold.drink.L, na.rm = T)
+cold.drink.mean <- mean(total.cold.drink.L, na.rm = T)
+cold.drink.sd <- sd(total.cold.drink.L, na.rm = T)
+quantile(total.cold.drink.L, probs = c(.90))
+
+cold.drink.mean / drinking.mean * 100
+
+
+```
+
+
+```{r Filter cooking to 3 SDs}
+total.cooking.L <- total.L.filter$total.cooking.L
+total.cooking.L.df <- data.frame(total.cooking.L)
+
+cooking.median <- median(total.cooking.L, na.rm = T)
+cooking.mean <- mean(total.cooking.L, na.rm = T)
+cooking.sd <- sd(total.cooking.L, na.rm = T)
+cooking.min <- min(total.cooking.L, na.rm = T)
+cooking.max <- max(total.cooking.L, na.rm = T)
+quantile(total.cooking.L, probs = c(.90), na.rm = T)
 
 #Plot histogram of cooking consumption
-ggplot(total.saucepan.L.df, aes(total.saucepan.L)) + geom_histogram(fill="black", bins = 10) + theme_bw() + 
+ggplot(total.cooking.L.df, aes(total.cooking.L)) + geom_histogram(fill="black", bins = 10) + theme_bw() + 
   ylab("n") + xlab("") + 
   xlab("Daily tap water consumption from cooking (L)") +
   ylab("Number of respondents") +
@@ -233,33 +263,39 @@ ggplot(total.saucepan.L.df, aes(total.saucepan.L)) + geom_histogram(fill="black"
 
 ```
 
-## **4. Total consumption, drinking + cooking**
 
-```{r warning = F}
-total.L <- cbind(total.drink.L, total.saucepan.L)
-total.L <- rowSums(total.L[,c("total.drink.L", "total.saucepan.L")])
+## **5. Total consumption, drinking + cooking**
+
+
+total.L <- cbind(total.drink.L, total.cooking.L)
+total.L <- rowSums(total.L[,c("total.drink.L", "total.cooking.L")])
 total.L.df <- data.frame(total.L)
 
 #Then use filtered values
 total.L.filt <- merge(qs3.filtered, qs33.filtered, by="row.names", sort=F)
-total.L.filt <- total.L.filt[c("Row.names", "total.drink.L", "total.saucepan.L")]
+total.L.filt <- total.L.filt[c("Row.names", "total.drink.L", "total.cooking.L")]
 names(total.L.filt)[1] <- "study_no"
 total.L.filt.df <- total.L.filt
 
 #Calculate total consumption
-total.L.filt <- rowSums(total.L.filt[,c("total.drink.L", "total.saucepan.L")])
+total.L.filt <- rowSums(total.L.filt[,c("total.drink.L", "total.cooking.L")])
 
-total.median <- median(total.L.filt, na.rm = T)
-total.mean <- mean(total.L.filt, na.rm = T)
-total.sd <- sd(total.L.filt, na.rm = T)
-total.min <- min(total.L.filt, na.rm = T)
-total.max <- max(total.L.filt, na.rm = T)
-quantile(total.L.filt, probs = c(.90), na.rm = T)
+total.L.filter
 
+```{r warning = F}
+total.consump.L <- total.L.filter$total.L 
 
+total.median <- median(total.L.filter$total.L, na.rm = T)
+total.mean <- mean(total.L.filter$total.L, na.rm = T)
+total.sd <- sd(total.L.filter$total.L, na.rm = T)
+total.min <- min(total.L.filter$total.L, na.rm = T)
+total.max <- max(total.L.filter$total.L, na.rm = T)
+quantile(total.L.filter$total.L, probs = c(.90), na.rm = T)
+
+total.L.filter.df <- data.frame(total.L.filter)
 
 #Plot histogram of total consumption
-ggplot(total.L.df, aes(total.L)) + geom_histogram(fill="black") + theme_bw() + 
+ggplot(total.L.filter.df, aes(total.L)) + geom_histogram(fill="black") + theme_bw() + 
   ylab("n") + xlab("") + 
   #geom_vline(xintercept = 2.7, linetype="dashed")  + geom_vline(xintercept = 3.7, linetype="dotted") + 
   xlab("Daily tap water consumption (L)") +
@@ -271,14 +307,17 @@ ggplot(total.L.df, aes(total.L)) + geom_histogram(fill="black") + theme_bw() +
 
 
 ```{r}
+study_no_filter=total.L.filter$study_no #Subset ParticipantID to the filtered 3SD data points
 
 ### Create a R object with all of the data here for ease, specific objects and a df to be shared back to team etc 
-water.consump <- data.frame(total.drink.L= total.drink.L, total.cooking.L = total.saucepan.L, total.consump.L = total.L, total.hot.drink.L = total.hot.drink.L, study_no=df.q$ParticipantID) #original
+water.consump.filter <- data.frame(total.drink.L = total.drink.L, total.cooking.L = total.cooking.L, total.consump.L = total.consump.L, total.hot.drink.L = total.hot.drink.L, study_no=study_no_filter) 
 
+#water.consump <- data.frame(total.drink.L= total.drink.L, total.cooking.L = total.cooking.L, total.consump.L = total.L, #total.hot.drink.L = total.hot.drink.L, study_no=df.q$ParticipantID) #original
 
 rd = dd
-write.csv.date(water.consump ,  "water.consump")
+#write.csv.date(water.consump ,  "water.consump")
 
+write.csv.date(water.consump.filter,  "water.consump.filter")
 
 ```
 
