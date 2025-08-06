@@ -361,7 +361,7 @@ tail(stratum_level)
 ```
 Write for results
 
-```{r}
+```{r include=F}
 
 write.csv(stratum_level, paste0(dd, "/I1194/Stratum_level_ranked_IMAIHDA-results.csv", row.names=F))
 
