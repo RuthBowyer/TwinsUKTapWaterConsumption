@@ -37,7 +37,7 @@ library(halfmoon)
 
 ```{r include=FALSE}
 dd <- "~/Library/CloudStorage/OneDrive-King'sCollegeLondon/Working_projects/Tap.water/SharedDSRB/Data/I1194"
-dd <- "C:/Users/User/OneDrive - King's College London/SharedDSRB/Data/I1194"
+#dd <- "C:/Users/User/OneDrive - King's College London/SharedDSRB/Data/I1194"
 ```
 
 ```{r proj defined functions}
