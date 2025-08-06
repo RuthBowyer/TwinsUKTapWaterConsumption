@@ -3,5 +3,5 @@
 .RData
 .Ruserdata
 .RDS
-*.rmd
+*.Rmd
 *.html
