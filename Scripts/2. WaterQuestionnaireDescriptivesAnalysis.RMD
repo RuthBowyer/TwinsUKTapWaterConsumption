@@ -33,12 +33,6 @@ library(RColorBrewer)
 library(ggpubr)
 
 
-
-#checking
-
-
-
-
 ```
 
 
@@ -608,6 +602,14 @@ pairwise.wilcox.test(total.drink.L.under45$total.drink.L, total.drink.L.under45$
 ```{r}
 pairwise.wilcox.test(water.c.demo$total.drink.L, water.c.demo$SEX)
 ```
+
+```{r include = F}
+
+aa <- read.csv("~/Library/CloudStorage/OneDrive-King'sCollegeLondon/Working_projects/Tap.water/SharedDSRB/Data/TUKsocioeconomics_from_descriptives_2021_eth_edu_imd.csv")
+
+```
+
+
 ```{r #Add education, IMD and employment}
 #aa <- read.csv(###Add csv file of education and IMD data. File name removed for security.)
 
@@ -646,34 +648,6 @@ table(water.c.demo$edu_bin_combined)
 
 kruskal.test(total.drink.L ~ edu_bin_combined, data = water.c.demo)
 pairwise.wilcox.test(water.c.demo$total.drink.L, water.c.demo$edu_bin_combined)
-
-
-#Add and test employment
-### Ruth will add in cope data for easy employment status
-# cope1 <- read.csv("C:/Users/Ruth/OneDrive - King's College London/Working_projects/Cope.Cleaning/Data/Cope1.Cleaned/Cope1.Clean.05.10.21.csv")
-# employ <- cope1[c("study_no", "E97")]
-# 
-# water.c.demo <- left_join(water.c.demo, employ, by="study_no")
-# 
-# #1	Employed
-# #2	Self-eployed
-# #3	In unpaid/ voluntary work
-# #4	Apprenticeship
-# #5	Unemployed
-# #6	Permanently sick or disabled
-# #7	Looking after home or family
-# #8	In education at school/college/university, or in an apprenticeship
-# #9	Retired
-# #10 
-# 
-# x <- water.c.demo$E97
-# 
-# 
-# water.c.demo$employment.status <- ifelse(x==9|x<8&x>4, "Retired, Unemployed, Carer, LT Sick", 
-#                                          ifelse(is.na(x), NA, "Employed, Education etc"))
-# 
-# table(water.c.demo$employment.status, useNA="ifany")
-
 
 ```
 
